@@ -2,14 +2,14 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_CREDS = 'aakash-dockerhub'
+        DOCKER_CREDS = 'DOCKER_CREDS'
         DOCKER_REG = 'aakashrawat1910'
         GIT_URL = 'https://github.com/aakashrawat1910/Learner-Report-Application-Deployment.git'
         GIT_BRANCH = 'main'
         AWS_ACCESS_KEY_ID = 'AWS_ACCESS_KEY_ID' // AWS Access Key ID stored in Jenkins
         AWS_SECRET_ACCESS_KEY = 'AWS_SECRET_ACCESS_KEY' // AWS Secret Access Key stored in Jenkins
-        AWS_REGION = 'us-west-1' // AWS region where the cluster is located
-        CLUSTER_NAME = 'aakash-eksctl-learnerapplication' // EKS cluster name
+        AWS_REGION = 'AWS_REGION' // AWS region where the cluster is located
+        CLUSTER_NAME = 'CLUSTER_NAME' // EKS cluster name
     }
 
     stages {
