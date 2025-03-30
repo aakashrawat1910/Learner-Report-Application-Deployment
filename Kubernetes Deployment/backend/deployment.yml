@@ -21,8 +21,18 @@ spec:
         env:
         - name: PORT
           value: "3001"
-        - name: MONGO_URI
+        - name: ATLAS_URI
           valueFrom:
             secretKeyRef:
               name: be-secret
-              key: MONGO_URI          
+              key: ATLAS_URI
+        - name: HASH_KEY
+          valueFrom:
+            secretKeyRef:
+              name: be-secret
+              key: HASH_KEY
+        - name: JWT_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: be-secret
+              key: JWT_SECRET_KEY          
