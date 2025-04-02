@@ -77,46 +77,12 @@ Send a POST request to create a user before login:
 
 ## Dockerization
 
-### Backend Dockerfile
-```dockerfile
-FROM node:16
-WORKDIR /usr/src/app
-COPY package*.json ./
-RUN npm install
-COPY . .
-EXPOSE 3001
-CMD [ "node", "index.js" ]
-```
+### Backend Docker Configuration
+See [`backend/Dockerfile`](./backend/Dockerfile) for the Node.js backend containerization setup.
 
-### Frontend Dockerfile (Development)
-```dockerfile
-FROM node:16
-WORKDIR /usr/src/app
-COPY package*.json ./
-RUN npm install --legacy-peer-deps --silent
-COPY . .
-EXPOSE 3000
-CMD ["npm","start"]
-```
-
-### Frontend Dockerfile (Production for Kubernetes)
-```dockerfile
-# Stage 1: Build the React application
-FROM node:16 AS build
-WORKDIR /usr/src/app
-COPY package*.json ./
-RUN npm install --legacy-peer-deps --silent
-COPY . .
-RUN npm run build
-
-# Stage 2: Serve the application using nginx
-FROM nginx:alpine
-WORKDIR /usr/share/nginx/html
-RUN rm -rf ./*
-COPY --from=build /usr/src/app/build .
-EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
-```
+### Frontend Docker Configuration
+- Development: See [`frontend/Dockerfile.dev`](./frontend/Dockerfile.dev)
+- Production: See [`frontend/Dockerfile.prod`](./frontend/Dockerfile.prod) (multi-stage build with Nginx for Kubernetes)
 
 ### Build and Push Docker Images
 ```bash
@@ -125,415 +91,67 @@ docker build -t learnerreport:backend .
 docker tag learnerreport:backend yourusername/learnerreport:backend
 docker push yourusername/learnerreport:backend
 
-# Frontend (Development)
-docker build -t learnerreport:frontend .
-docker tag learnerreport:frontend yourusername/learnerreport:frontend
-docker push yourusername/learnerreport:frontend
-
 # Frontend (Production)
-docker build -t learnerreport:frontendforkubernetes .
+docker build -f Dockerfile.prod -t learnerreport:frontendforkubernetes .
 docker tag learnerreport:frontendforkubernetes yourusername/learnerreport:frontendforkubernetes
 docker push yourusername/learnerreport:frontendforkubernetes
 ```
 
 ## Kubernetes Deployment
 
+All Kubernetes configuration files can be found in the [`Kubernetes Deployment`](./Kubernetes%20Deployment/) directory.
+
 ### Database Deployment
 
-1. Create namespace
-```yaml
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: lrdatabase
-```
+Database configuration files:
+- [`database/namespace.yml`](./Kubernetes%20Deployment/database/namespace.yml)
+- [`database/db-pv.yml`](./Kubernetes%20Deployment/database/db-pv.yml)
+- [`database/db-pvc.yml`](./Kubernetes%20Deployment/database/db-pvc.yml)
+- [`database/deployment.yml`](./Kubernetes%20Deployment/database/deployment.yml)
+- [`database/service.yml`](./Kubernetes%20Deployment/database/service.yml)
 
-2. Create PersistentVolume
-```yaml
-apiVersion: v1
-kind: PersistentVolume
-metadata:
-  name: db-pv
-  namespace: lrdatabase
-spec:
-  capacity:
-    storage: 2Gi
-  accessModes:
-    - ReadWriteOnce
-  hostPath:
-    path: /mnt/data
-```
-
-3. Create PersistentVolumeClaim
-```yaml
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: db-pvc
-  namespace: lrdatabase
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 2Gi
-```
-
-4. Create Deployment
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: db-deployment
-  namespace: lrdatabase
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: mongodb
-  template:
-    metadata:
-      labels:
-        app: mongodb
-    spec:
-      containers:
-      - name: lrmongodb
-        image: mongo:latest
-        ports:
-        - containerPort: 27017
-        volumeMounts:
-        - mountPath: /data/db
-          name: mongodb-storage
-      volumes:
-      - name: mongodb-storage
-        persistentVolumeClaim:
-          claimName: db-pvc
-```
-
-5. Create Service
-```yaml
-apiVersion: v1
-kind: Service
-metadata:
-  name: db-service
-  namespace: lrdatabase
-spec:
-  selector:
-    app: mongodb
-  ports:
-  - protocol: TCP
-    port: 27017
-    targetPort: 27017
-  type: ClusterIP
+Apply the configurations:
+```bash
+kubectl apply -f ./Kubernetes\ Deployment/database/
 ```
 
 ### Backend Deployment
 
-1. Create namespace
-```yaml
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: lrbackend
-```
+Backend configuration files:
+- [`backend/namespace.yml`](./Kubernetes%20Deployment/backend/namespace.yml)
+- [`backend/secret.yml`](./Kubernetes%20Deployment/backend/secret.yml)
+- [`backend/deployment.yml`](./Kubernetes%20Deployment/backend/deployment.yml)
+- [`backend/service.yml`](./Kubernetes%20Deployment/backend/service.yml)
 
-2. Create Secret
-```yaml
-apiVersion: v1
-kind: Secret
-metadata:
-  name: be-secret
-  namespace: lrbackend
-type: Opaque
-data:
-  MONGO_URI: bW9uZ29kYjovL2RiLXNlcnZpY2UubHJkYXRhYmFzZS5zdmMuY2x1c3Rlci5sb2NhbDoyNzAxNy9MZWFybmVyUmVwb3J0
-```
-
-3. Create Deployment
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: be-deployment
-  namespace: lrbackend
-spec:
-  replicas: 2
-  selector:
-    matchLabels:
-      app: backend
-  template:
-    metadata:
-      labels:
-        app: backend
-    spec:
-      containers:
-      - name: lrbackend
-        image: yourusername/learnerreport:backend
-        ports:
-        - containerPort: 3001
-        env:
-        - name: PORT
-          value: "3001"
-        - name: MONGO_URI
-          valueFrom:
-            secretKeyRef:
-              name: be-secret
-              key: MONGO_URI
-```
-
-4. Create Service
-```yaml
-apiVersion: v1
-kind: Service
-metadata:
-  name: be-service
-  namespace: lrbackend
-spec:
-  selector:
-    app: backend
-  ports:
-  - protocol: TCP
-    port: 3001
-    targetPort: 3001
-  type: LoadBalancer
+Apply the configurations:
+```bash
+kubectl apply -f ./Kubernetes\ Deployment/backend/
 ```
 
 ### Frontend Deployment
 
-1. Create namespace
-```yaml
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: lrfrontend
-```
+Frontend configuration files:
+- [`frontend/namespace.yml`](./Kubernetes%20Deployment/frontend/namespace.yml)
+- [`frontend/secret.yml`](./Kubernetes%20Deployment/frontend/secret.yml)
+- [`frontend/deployment.yml`](./Kubernetes%20Deployment/frontend/deployment.yml)
+- [`frontend/service.yml`](./Kubernetes%20Deployment/frontend/service.yml)
 
-2. Create Secret
-```yaml
-apiVersion: v1
-kind: Secret
-metadata:
-  name: fe-secret
-  namespace: lrfrontend
-type: Opaque
-data:
-  REACT_APP_BACKEND_URL: aHR0cDovL2JlLXNlcnZpY2UubHJiYWNrZW5kLnN2Yy5jbHVzdGVyLmxvY2FsOjMwMDE=
-```
-
-3. Create Deployment
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: fe-deployment
-  namespace: lrfrontend
-spec:
-  replicas: 2
-  selector:
-    matchLabels:
-      app: frontend
-  template:
-    metadata:
-      labels:
-        app: frontend
-    spec:
-      containers:
-      - name: lrfrontend
-        image: yourusername/learnerreport:frontendforkubernetes
-        ports:
-        - containerPort: 80
-        resources:
-          limits:
-            memory: "512Mi"
-            cpu: "500m"
-          requests:
-            memory: "256Mi"
-            cpu: "250m"
-        env:
-        - name: PORT
-          value: "3000"
-        - name: REACT_APP_BACKEND_URL
-          valueFrom:
-            secretKeyRef:
-              name: fe-secret
-              key: REACT_APP_BACKEND_URL
-```
-
-4. Create Service
-```yaml
-apiVersion: v1
-kind: Service
-metadata:
-  name: fe-service
-  namespace: lrfrontend
-spec:
-  selector:
-    app: frontend
-  ports:
-  - protocol: TCP
-    port: 80
-    targetPort: 80
-  type: LoadBalancer
+Apply the configurations:
+```bash
+kubectl apply -f ./Kubernetes\ Deployment/frontend/
 ```
 
 ## CI/CD Pipeline with Jenkins
 
-### Jenkins Pipeline Script
-```groovy
-pipeline {
-    agent any
-    environment {
-        DOCKER_CREDS = 'aakash-dockerhub'
-        DOCKER_REG = 'aakashrawat1910'
-        GIT_URL = 'https://github.com/aakashrawat1910/Learner-Report-Application-Deployment.git'
-        GIT_BRANCH = 'main'
-        AWS_ACCESS_KEY_ID = 'AWS_ACCESS_KEY_ID'
-        AWS_SECRET_ACCESS_KEY = 'AWS_SECRET_ACCESS_KEY'
-        AWS_REGION = 'us-west-1'
-        CLUSTER_NAME = 'aakash-learnerapplication'
-    }
-    
-    stages {
-        stage('Checkout Code') {
-            steps {
-                echo 'Checking out code from GitHub...'
-                git url: "${env.GIT_URL}", branch: "${env.GIT_BRANCH}"
-            }
-        }
-        
-        stage('Push Docker Images') {
-            steps {
-                script {
-                    echo 'Pushing Docker images to Docker Hub...'
-                    docker.withRegistry('', DOCKER_CREDS) {
-                        docker.image("${DOCKER_REG}/learnerreport:backend").push()
-                        docker.image("${DOCKER_REG}/learnerreport:frontendforkubernetes").push()
-                    }
-                }
-            }
-        }
-        
-        stage('Configure kubectl') {
-            steps {
-                script {
-                    echo 'Configuring kubectl with AWS EKS...'
-                    sh """
-                    export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-                    export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-                    export AWS_REGION=${AWS_REGION}
-                    aws --version
-                    """
-                }
-            }
-        }
-        
-        stage('Create Kubernetes Cluster') {
-            steps {
-                script {
-                    sh """
-                    # Check if cluster exists
-                    if ! aws eks describe-cluster --name ${CLUSTER_NAME} --query 'cluster.status' --output text 2>/dev/null; then
-                        echo "Cluster does not exist. Creating a new cluster..."
-                        eksctl create cluster --name ${CLUSTER_NAME} \\
-                            --region ${AWS_REGION} \\
-                            --version 1.31 \\
-                            --nodegroup-name aakash-standard-workers \\
-                            --node-type t3.medium \\
-                            --nodes 2 \\
-                            --nodes-min 1 \\
-                            --nodes-max 3 \\
-                            --with-oidc \\
-                            --managed
-                    else
-                        echo "Cluster already exists. Using existing cluster."
-                    fi
-                   
-                    # Update kubeconfig regardless of creation
-                    aws eks update-kubeconfig --region ${AWS_REGION} --name ${CLUSTER_NAME}
-                    """
-                }
-            }
-        }
-        
-        stage('Deploy Database to Kubernetes') {
-            steps {
-                script {
-                    echo 'Deploying Database to Kubernetes...'
-                    sh """
-                    kubectl apply -f './Kubernetes Deployment/database/namespace.yml'
-                    kubectl apply -f './Kubernetes Deployment/database/db-pv.yml'
-                    kubectl apply -f './Kubernetes Deployment/database/db-pvc.yml'
-                    kubectl apply -f './Kubernetes Deployment/database/deployment.yml'
-                    kubectl apply -f './Kubernetes Deployment/database/service.yml'                    
-                    """
-                }
-            }
-        }
-        
-        stage('Deploy Backend to Kubernetes') {
-            steps {
-                script {
-                    echo 'Deploying Backend to Kubernetes...'
-                    sh """                    
-                    kubectl apply -f './Kubernetes Deployment/backend/namespace.yml'
-                    kubectl apply -f './Kubernetes Deployment/backend/secret.yml'
-                    kubectl apply -f './Kubernetes Deployment/backend/deployment.yml'
-                    kubectl apply -f './Kubernetes Deployment/backend/service.yml'
-                    """
-                }
-            }
-        }
-        
-        stage('Update loadbalancer IP in Frontend') {
-            steps {
-                script {
-                    echo 'Updating load balancer IP in Frontend...'
-                   
-                    // Fetch the backend service hostname
-                    def backendService = sh(script: "kubectl get svc be-service -n lrbackend -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'", returnStdout: true).trim()
-                   
-                    // Debugging: Print the backendService value
-                    echo "Backend Service Hostname: ${backendService}"
-                   
-                    // Check if backendService is empty
-                    if (!backendService) {
-                        error "Failed to retrieve backend service hostname. Ensure the service 'be-service' is deployed and has a valid load balancer IP/hostname."
-                    }
-                   
-                    // Create base64 encoded URL for secret
-                    def backendUrl = "http://${backendService}:3001"
-                    echo "Backend URL: ${backendUrl}"
-                   
-                    def encodedUrl = sh(script: "echo -n '${backendUrl}' | base64", returnStdout: true).trim()
-                    echo "Encoded Backend URL: ${encodedUrl}"
-                   
-                    // Use a temporary file to update secret.yml
-                    sh """
-                    temp_file=\$(mktemp)
-                    echo "REACT_APP_BACKEND_URL: \\\"${encodedUrl}\\\"" > \$temp_file
-                    sed -i '/REACT_APP_BACKEND_URL:/r \$temp_file' './Kubernetes Deployment/frontend/secret.yml'
-                    rm -f \$temp_file
-                    """
-                }
-            }
-        }
-        
-        stage('Deploy Frontend to Kubernetes') {
-            steps {
-                script {
-                    echo 'Deploying Frontend to Kubernetes...'
-                    sh """
-                    kubectl apply -f './Kubernetes Deployment/frontend/namespace.yml'
-                    kubectl apply -f './Kubernetes Deployment/frontend/secret.yml'
-                    kubectl apply -f './Kubernetes Deployment/frontend/deployment.yml'
-                    kubectl apply -f './Kubernetes Deployment/frontend/service.yml'
-                    """
-                }
-            }
-        }
-    }
-}
-```
+The Jenkins pipeline configuration can be found in [`Jenkinsfile`](./Jenkinsfile).
+
+To set up the pipeline:
+1. Create a new pipeline job in Jenkins
+2. Configure it to use the Pipeline script from SCM
+3. Set the SCM to Git and provide your repository URL
+4. Set the script path to `Jenkinsfile`
+5. Configure credentials for Docker Hub and AWS in Jenkins credentials store
+6. Run the pipeline
 
 ## AWS EKS Deployment
 
