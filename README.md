@@ -81,8 +81,7 @@ Send a POST request to create a user before login:
 See [`backend/Dockerfile`](./backend/Dockerfile) for the Node.js backend containerization setup.
 
 ### Frontend Docker Configuration
-- Development: See [`frontend/Dockerfile.dev`](./frontend/Dockerfile.dev)
-- Production: See [`frontend/Dockerfile.prod`](./frontend/Dockerfile.prod) (multi-stage build with Nginx for Kubernetes)
+- Production: See [`frontend/Dockerfile`](./frontend/Dockerfile) (multi-stage build with Nginx for Kubernetes)
 
 ### Build and Push Docker Images
 ```bash
@@ -143,7 +142,7 @@ kubectl apply -f ./Kubernetes\ Deployment/frontend/
 
 ## CI/CD Pipeline with Jenkins
 
-The Jenkins pipeline configuration can be found in [`Jenkinsfile`](./Jenkinsfile).
+The Jenkins pipeline configuration can be found in [`jenkins/Jekins-deployment.groovy`](./jenkins/Jekins-deployment.groovy).
 
 To set up the pipeline:
 1. Create a new pipeline job in Jenkins
