@@ -1,0 +1,11 @@
+namespaces:
+  backend: lrbackend
+  database: lrdatabase
+
+mongodb:
+  image: mongo
+  tags: latest
+  storage: 2Gi
+  path: /mnt/data
+  port: 27017
+  containerName: lrmongodb
