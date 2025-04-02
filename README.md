@@ -78,10 +78,10 @@ Send a POST request to create a user before login:
 ## Dockerization
 
 ### Backend Docker Configuration
-See [`backend/Dockerfile`](./backend/Dockerfile) for the Node.js backend containerization setup.
+See [`Backend/Dockerfile`](./Backend/Dockerfile) for the Node.js backend containerization setup.
 
 ### Frontend Docker Configuration
-- Production: See [`frontend/Dockerfile`](./frontend/Dockerfile) (multi-stage build with Nginx for Kubernetes)
+- Production: See [`Frontend/Dockerfile`](./Frontend/Dockerfile) (multi-stage build with Nginx for Kubernetes)
 
 ### Build and Push Docker Images
 ```bash
