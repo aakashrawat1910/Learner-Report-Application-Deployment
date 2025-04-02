@@ -195,28 +195,37 @@ echo -n "http://BACKEND_SERVICE_URL:3001" | base64
 
 <div align="center">
   <p><strong>Local Application Running</strong></p>
+  
   ![image](https://github.com/user-attachments/assets/e8048026-a0ca-46c8-a2bf-7bf8aefe2300)
+  
   ![image](https://github.com/user-attachments/assets/1c5277ce-6f61-4b09-a4e2-debd175fda66)
   ![image](https://github.com/user-attachments/assets/e6abcbd6-2cb8-43b7-b92e-a95583c0d79c)
   
   <p><strong>User Creation in Postman</strong></p>
+  
   ![image](https://github.com/user-attachments/assets/44acd76f-1d6a-450f-9cf9-293a61f5ad73)
   
+  
   <p><strong>Application Login</strong></p>
+  
   ![image](https://github.com/user-attachments/assets/c5edf8be-f992-43c1-9ab1-d992a930c5fc)
   
   <p><strong>Docker Container Running</strong></p>
+  
   ![image](https://github.com/user-attachments/assets/2b962f7d-189f-43ed-bfd5-21677ebf8ea3)
   
   <p><strong>Kubernetes Deployment</strong></p>
+  
   ![image](https://github.com/user-attachments/assets/f2936ea3-d478-4097-ad8e-28c337f74b57)
   ![image](https://github.com/user-attachments/assets/c63bfe47-d9bb-49de-aab4-6486d4d43a9a)
   ![image](https://github.com/user-attachments/assets/c0be9058-e054-4eae-bb65-cfb793c7b188)
   
   <p><strong>Jenkins Pipeline</strong></p>
+  
   ![image](https://github.com/user-attachments/assets/8b0421c7-e382-4e4b-b16c-30cb039db2cc)
   
   <p><strong>EKS Deployment</strong></p>
+  
   ![image](https://github.com/user-attachments/assets/9aad0009-0bf1-4632-82d5-6db32787167e)
   ![image](https://github.com/user-attachments/assets/bb9c95c1-ce18-4a0c-bb91-4846107e7a51)
 </div>
